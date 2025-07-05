@@ -31,6 +31,11 @@ vector_dir = os.path.join(project_root, 'vector_store')
 vector_index_path = os.path.join(vector_dir, 'faiss_index')
 metadata_path = os.path.join(vector_dir, 'metadata.pkl')
 
+# ✅ Parameters
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 150
+
 # ✅ Step 1: Load Cleaned Data
 def load_cleaned_data(filepath):
     return pd.read_csv(filepath)
@@ -83,3 +88,16 @@ def save_vector_store(embeddings, metadata, index_path, metadata_path):
     with open(metadata_path, "wb") as f:
         pickle.dump(metadata, f)
 
+# ✅ Main Execution
+if __name__ == "__main__":
+    print("\n🔍 Starting Task 2: Chunking, Embedding, and Indexing\n")
+
+    df = load_cleaned_data(data_path)
+    splitter = create_text_splitter(CHUNK_SIZE, CHUNK_OVERLAP)
+    embedder = load_embedding_model(EMBEDDING_MODEL_NAME)
+    embeddings, metadata = generate_embeddings(df, splitter, embedder)
+    save_vector_store(embeddings, metadata, vector_index_path, metadata_path)
+
+    print("\n✅ Task 2 completed. Vector store saved to:")
+    print(f" - Index: {vector_index_path}")
+    print(f" - Metadata: {metadata_path}\n")
