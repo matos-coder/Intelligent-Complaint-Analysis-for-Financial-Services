@@ -70,3 +70,15 @@ def generate_embeddings(df, splitter, embedder):
             })
 
     return all_embeddings, metadata_records
+
+# ✅ Step 5: Save FAISS Index and Metadata
+def save_vector_store(embeddings, metadata, index_path, metadata_path):
+    os.makedirs(os.path.dirname(index_path), exist_ok=True)
+
+    dim = len(embeddings[0])
+    index = faiss.IndexFlatL2(dim)
+    index.add(np.array(embeddings))
+    faiss.write_index(index, index_path)
+
+    with open(metadata_path, "wb") as f:
+        pickle.dump(metadata, f)
