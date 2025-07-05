@@ -46,3 +46,27 @@ def create_text_splitter(chunk_size, overlap):
 # ✅ Step 3: Initialize Embedding Model
 def load_embedding_model(model_name):
     return SentenceTransformer(model_name)
+
+# ✅ Step 4: Generate Embeddings and Metadata
+def generate_embeddings(df, splitter, embedder):
+    all_embeddings = []
+    metadata_records = []
+
+    for idx, row in tqdm(df.iterrows(), total=len(df)):
+        complaint_id = row.get("Complaint ID", idx)  # fallback if missing
+        product = row["Product"]
+        text = row["cleaned_narrative"]
+
+        chunks = splitter.split_text(text)
+        embeddings = embedder.encode(chunks)
+
+        for i, (chunk_text, vector) in enumerate(zip(chunks, embeddings)):
+            all_embeddings.append(vector)
+            metadata_records.append({
+                "complaint_id": complaint_id,
+                "product": product,
+                "chunk_index": i,
+                "text": chunk_text
+            })
+
+    return all_embeddings, metadata_records
