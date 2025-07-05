@@ -2,3 +2,8 @@
 seaborn
 matplotlib
 pandas
+tqdm 
+sentence-transformers 
+faiss-cpu 
+langchain 
+numpy
