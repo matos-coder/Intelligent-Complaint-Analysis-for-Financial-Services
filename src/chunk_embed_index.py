@@ -82,3 +82,4 @@ def save_vector_store(embeddings, metadata, index_path, metadata_path):
 
     with open(metadata_path, "wb") as f:
         pickle.dump(metadata, f)
+
