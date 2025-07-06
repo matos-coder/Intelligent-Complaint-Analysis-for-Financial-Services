@@ -1,1 +1,9 @@
 # Add your project dependencies here
+seaborn
+matplotlib
+pandas
+tqdm 
+sentence-transformers 
+faiss-cpu 
+langchain 
+numpy
