@@ -10,7 +10,8 @@ This module builds the Retrieval-Augmented Generation (RAG) pipeline:
 4. Construct a prompt
 5. Generate an answer using an LLM
 
-The output is a human-readable answer grounded in retrieved context.
+Default LLM: google/flan-t5-base (lightweight for CPU use)
+Optional: mistralai/Mistral-7B-Instruct-v0.1 (for Colab/GPU — see comments)
 """
 
 # ✅ Imports
@@ -41,7 +42,19 @@ def load_vector_store():
 # ✅ Step 2: Initialize Embedding and Generator Models
 def initialize_models():
     embedder = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    generator = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct-v0.1", device_map="auto")
+
+    # ✅ Lightweight LLM for CPU (no login needed)
+    generator = pipeline("text2text-generation", model="google/flan-t5-base")
+
+    # ❗ Optional (for Google Colab with GPU access):
+    # To use Mistral 7B model instead:
+    # 1. Upload your Hugging Face token to Colab:
+    #    from huggingface_hub import login
+    #    login(token="your_hf_token")
+    # 2. Install: !pip install transformers accelerate bitsandbytes
+    # 3. Replace this line:
+    #    generator = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct-v0.1", device_map="auto")
+
     return embedder, generator
 
 # ✅ Step 3: Retrieve Top-k Context Chunks
@@ -70,7 +83,6 @@ Context:
 {context}
 
 Question: {query}
-Answer:
 """
     return prompt
 
@@ -79,12 +91,10 @@ def answer_query(query, embedder, generator, index, metadata, top_k=TOP_K):
     context, retrieved_meta = retrieve_context(query, embedder, index, metadata, top_k)
     prompt = build_prompt(context, query)
 
-    # Use a small max_new_tokens value for concise answers
-    response = generator(prompt, max_new_tokens=256, do_sample=True, temperature=0.7)[0]["generated_text"]
+    # flan-t5 uses "text2text-generation" and expects prompt only
+    response = generator(prompt, max_new_tokens=256)[0]["generated_text"].strip()
 
-    # Extract only the model's answer portion
-    answer = response.split("Answer:")[-1].strip()
-    return answer, context, retrieved_meta
+    return response, context, retrieved_meta
 
 # ✅ Example Usage for Evaluation
 if __name__ == "__main__":
