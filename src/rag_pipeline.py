@@ -73,3 +73,37 @@ Question: {query}
 Answer:
 """
     return prompt
+
+# ✅ Step 5: Run the RAG Pipeline
+def answer_query(query, embedder, generator, index, metadata, top_k=TOP_K):
+    context, retrieved_meta = retrieve_context(query, embedder, index, metadata, top_k)
+    prompt = build_prompt(context, query)
+
+    # Use a small max_new_tokens value for concise answers
+    response = generator(prompt, max_new_tokens=256, do_sample=True, temperature=0.7)[0]["generated_text"]
+
+    # Extract only the model's answer portion
+    answer = response.split("Answer:")[-1].strip()
+    return answer, context, retrieved_meta
+
+# ✅ Example Usage for Evaluation
+if __name__ == "__main__":
+    print("\n🚀 Running the RAG pipeline for evaluation...\n")
+
+    # Load vector data & models
+    index, metadata = load_vector_store()
+    embedder, generator = initialize_models()
+
+    # Sample test questions (can be extended to 5–10 in evaluation)
+    questions = [
+        "What are common issues reported about BNPL?",
+        "Why are customers frustrated with credit card services?",
+        "Do people complain about transfer delays?"
+    ]
+
+    for q in questions:
+        print(f"🔹 Question: {q}")
+        answer, context, meta = answer_query(q, embedder, generator, index, metadata)
+        print(f"🧠 Answer: {answer}\n")
+        print(f"📄 Retrieved Source Sample: {meta[0]['text'][:200]}...\n")
+        print("-" * 80)
