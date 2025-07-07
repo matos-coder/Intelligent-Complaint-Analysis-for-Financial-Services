@@ -137,7 +137,7 @@ The entire pipeline is implemented in `src/chunk_embed_index.py`.
 
 - Run inside a Jupyter Notebook:
   ```
-  notebooks/EDA.ipynb
+  notebooks/Task1_EDA.ipynb
   ```
 
 ## Task 2 - Chunking & Indexing
