@@ -43,3 +43,33 @@ def initialize_models():
     embedder = SentenceTransformer(EMBEDDING_MODEL_NAME)
     generator = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct-v0.1", device_map="auto")
     return embedder, generator
+
+# ✅ Step 3: Retrieve Top-k Context Chunks
+def retrieve_context(query, embedder, index, metadata, top_k=TOP_K):
+    query_vector = embedder.encode([query])
+    distances, indices = index.search(np.array(query_vector), top_k)
+
+    retrieved_chunks = []
+    for i in range(top_k):
+        idx = indices[0][i]
+        meta = metadata[idx]
+        chunk_text = meta["text"]
+        retrieved_chunks.append(chunk_text)
+
+    return "\n\n".join(retrieved_chunks), [metadata[i] for i in indices[0]]
+
+# ✅ Step 4: Build Prompt for the LLM
+def build_prompt(context, query):
+    prompt = f"""
+You are a financial analyst assistant for CrediTrust.
+Your task is to answer questions about customer complaints.
+Use the following retrieved complaint excerpts to formulate your answer.
+If the context doesn't contain the answer, say: 'I don't have enough information.'
+
+Context:
+{context}
+
+Question: {query}
+Answer:
+"""
+    return prompt
