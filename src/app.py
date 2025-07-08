@@ -15,7 +15,7 @@ from transformers import pipeline
 # --- ✅ Absolute Paths ---
 # We define the absolute path to the project root to ensure that the script
 # can find the vector_store directory no matter where you run it from.
-project_root = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 vector_dir = os.path.join(project_root, 'vector_store')
 index_path = os.path.join(vector_dir, 'faiss_index')
 metadata_path = os.path.join(vector_dir, 'metadata.pkl')
@@ -75,7 +75,8 @@ def get_rag_response(question, chat_history):
 
     # --- Step 4c: Retrieve the Actual Text Chunks ---
     # We use the retrieved indices to look up the original text chunks from our metadata.
-    retrieved_chunks = [metadata[i]['chunk'] for i in indices[0]]
+
+    retrieved_chunks = [metadata[i] for i in indices[0]]
     context = "\n\n".join(retrieved_chunks)
 
     # --- Step 4d: Engineer the Prompt for the LLM ---
