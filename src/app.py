@@ -76,7 +76,7 @@ def get_rag_response(question, chat_history):
     # --- Step 4c: Retrieve the Actual Text Chunks ---
     # We use the retrieved indices to look up the original text chunks from our metadata.
 
-    retrieved_chunks = [metadata[i] for i in indices[0]]
+    retrieved_chunks = [metadata[i]['text'] for i in indices[0]]
     context = "\n\n".join(retrieved_chunks)
 
     # --- Step 4d: Engineer the Prompt for the LLM ---
