@@ -1,167 +1,223 @@
 # Project Name
+
 intelligent-complaint-analysis
 
-# Project Overview
+## Project Overview
 
 This repository contains a semantic AI-powered complaint analysis pipeline for CrediTrust Financial, focused on turning thousands of unstructured customer complaints into actionable insights. The system aims to support internal teams—like product managers, support analysts, and compliance officers—by enabling natural language querying of real customer pain points across financial services. The project includes:
+
 - A robust and modular data preprocessing pipeline.
 - Exploratory Data Analysis (EDA) to inspect the quality and structure of customer complaints.
 - A vector-based semantic retrieval pipeline powered by FAISS and Sentence Transformers.
-- Prepared data and embeddings to support Retrieval-Augmented Generation (RAG) chatbot logic.
+- A complete Retrieval-Augmented Generation (RAG) pipeline that uses a Large Language Model (LLM) to generate insightful answers.
+- An interactive web-based chatbot interface built with Gradio for easy, non-technical user access.
 
-# Setup Instructions
+## Setup Instructions
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/matos-coder/Intelligent-Complaint-Analysis-for-Financial-Services
-   cd Intelligent-Complaint-Analysis-for-Financial-Services
-   ```
+### Clone the Repository
 
-2. **Create a Virtual Environment**
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate           # For Windows
-   # OR
-   source venv/bin/activate        # For Linux/macOS
-   ```
+```bash
+git clone https://github.com/matos-coder/Intelligent-Complaint-Analysis-for-Financial-Services
+cd Intelligent-Complaint-Analysis-for-Financial-Services
+```
 
-3. **Install Required Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Create a Virtual Environment
 
-# Project Structure
+```bash
+python -m venv .venv
+venv\Scripts\activate          # For Windows
+# OR
+source venv/bin/activate       # For Linux/macOS
+```
+
+### Install Required Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## Project Structure
 
 ```
 intelligent-complaint-analysis/
 ├── data/
-│   └── filtered_complaints.csv     # Preprocessed dataset
+│   └── filtered_complaints.csv        # Preprocessed dataset
 ├── notebooks/
-│   └── EDA.ipynb                   # Initial data analysis and insights
+│   └── EDA.ipynb                    # Initial data analysis and insights
 ├── src/
-│   └── chunk_embed_index.py        # Chunking, embedding, and vector store creation
+│   ├── chunk_embed_index.py         # Task 2: Chunking, embedding, and vector store creation
+│   ├── rag_evaluation.py            # Task 3: RAG pipeline logic and qualitative evaluation
+│   └── app.py                        # Task 4: Gradio chatbot application
 ├── vector_store/
-│   ├── faiss_index                 # FAISS vector index
-│   └── metadata.pkl                # Metadata (chunk → source link)
+│   ├── faiss_index                  # FAISS vector index
+│   └── metadata.pkl                 # Metadata (chunk -> source link)
 ├── requirements.txt
-├── README.md
+└── README.md
 ```
 
-# Tasks
+## Tasks
 
-## Task 1: Exploratory Data Analysis (EDA) and Preprocessing
+### Task 1: Exploratory Data Analysis (EDA) and Preprocessing
 
-**Objective:**  
+**Objective**:
 Understand the structure, content, and quality of the complaint data, and clean it for downstream semantic search and LLM processing.
 
-**Location:**  
+**Location**:
 All analysis is implemented in `notebooks/EDA.ipynb`.
 
-**Key Steps Performed:**
-- **Data Inspection:**  
+**Key Steps Performed**:
+
+- **Data Inspection**:
   - Dataset loaded from the Consumer Financial Protection Bureau (CFPB).
   - Inspected data types, null values, and initial statistics.
   - Counted number of complaints across financial products.
-- **Narrative Length Analysis:**  
+
+- **Narrative Length Analysis**:
   - Calculated word counts for each Consumer complaint narrative.
   - Visualized distribution of complaint lengths to identify very short/long cases.
-- **Filtering:**  
-  - Focused on 5 relevant financial products:  
-    - Credit card  
-    - Personal loan  
-    - Buy Now, Pay Later (BNPL)  
-    - Savings account  
-    - Money transfers  
+
+- **Filtering**:
+  - Focused on 5 relevant financial products:
+    - Credit card
+    - Personal loan
+    - Buy Now, Pay Later (BNPL)
+    - Savings account
+    - Money transfers
   - Removed complaints with missing narratives.
-- **Text Cleaning:**  
+
+- **Text Cleaning**:
   - Lowercased all narratives.
-  - Removed special characters and boilerplate legal language (e.g., "I am writing to file a complaint...").
+  - Removed special characters and boilerplate legal language.
   - Stripped whitespace for consistency.
-- **Saving Cleaned Dataset:**  
-  - Final cleaned and filtered dataset saved as `data/processed/filtered_complaints.csv`.
 
-**Key Insights from EDA:**
-- Original dataset had {total_complaints} complaints (auto-filled when run).
-- After filtering, {filtered_count} complaints remained, all related to target financial products.
-- Long-tail distribution of complaint lengths observed—some very verbose narratives.
-- Missing narrative field found in ~{missing_count} records and excluded from training.
-- Most complaints were about BNPL and Credit Cards, indicating high user dissatisfaction in those areas.
+- **Saving Cleaned Dataset**:
+  - Final cleaned and filtered dataset saved as `data/filtered_complaints.csv`.
 
-## Task 2: Text Chunking, Embedding, and Vector Indexing
+**Key Insights from EDA**:
+- Most complaints were about BNPL and Credit Cards, indicating high user dissatisfaction.
+- Missing narratives were excluded from training.
+- Long-tail distribution of narrative lengths revealed highly detailed complaints.
 
-**Objective:**  
+---
+
+### Task 2: Text Chunking, Embedding, and Vector Indexing
+
+**Objective**:
 Convert the cleaned complaints into dense vector representations suitable for efficient semantic search using Retrieval-Augmented Generation (RAG).
 
-**Location:**  
-The entire pipeline is implemented in `src/chunk_embed_index.py`.
+**Location**:
+Implemented in `src/chunk_embed_index.py`.
 
-**Components and Workflow:**
-- **Chunking:**  
-  - Used LangChain’s RecursiveCharacterTextSplitter to split long narratives into smaller, coherent text chunks.
-  - Applied a chunk_size = 800 and chunk_overlap = 150 for optimal balance between semantic completeness and context retention.
-- **Embedding:**  
-  - Used the pre-trained `sentence-transformers/all-MiniLM-L6-v2` model.
-  - Efficient, accurate, and supports local CPU-based embedding generation.
-- **Metadata Mapping:**  
-  - Stored metadata with each chunk:  
-    - Complaint ID  
-    - Product category  
-    - Chunk index  
-    - Original chunk text  
-  - This supports explainability in the chatbot output.
-- **Vector Store Indexing:**  
-  - Created a dense vector index using Facebook’s FAISS.
-  - Saved both the FAISS index and metadata to the `vector_store/` directory for reuse in the chatbot backend.
+**Components and Workflow**:
 
-**Justifications for Technical Choices:**
-- **Chunk Size:**  
-  - Chose a chunk size of 800 characters with 150 overlap to ensure that each chunk retains full semantic meaning, minimizing risk of context loss across splits.
-- **Embedding Model:**  
-  - `all-MiniLM-L6-v2` was selected for its excellent trade-off between speed and semantic accuracy, while being lightweight enough for local development.
+- **Chunking**:
+  - Used LangChain’s `RecursiveCharacterTextSplitter`.
+  - `chunk_size = 800` and `chunk_overlap = 150` for semantic cohesion.
 
-**Output:**
-- After successful execution, the following files are generated:
-  - `vector_store/faiss_index`: Dense vector index for fast similarity search.
-  - `vector_store/metadata.pkl`: Metadata dictionary mapping vectors to complaint info.
+- **Embedding**:
+  - Used `sentence-transformers/all-MiniLM-L6-v2`.
+  - Lightweight, efficient, accurate model suitable for CPU.
 
-# Project Goals
+- **Metadata Mapping**:
+  - Stored chunk text and product metadata to support explainability.
 
-- Enable instant, natural-language querying of customer complaints.
-- Reduce manual analysis time from hours to minutes.
-- Support multiple product teams with a unified AI interface.
-- Lay the foundation for building a Retrieval-Augmented Generation chatbot (Task 3 & 4).
+- **Vector Store Indexing**:
+  - Built FAISS index.
+  - Saved to `vector_store/faiss_index` and `vector_store/metadata.pkl`.
 
-# How to Run the Pipeline
+**Justifications**:
+- MiniLM was chosen for local compatibility and balanced performance.
+- Chunking ensured longer narratives were preserved without loss of meaning.
 
-## Task 1 - Data Preprocessing
+---
 
-- Run inside a Jupyter Notebook:
-  ```
-  notebooks/Task1_EDA.ipynb
-  ```
+### Task 3: Building the RAG Core Logic and Evaluation
 
-## Task 2 - Chunking & Indexing
+**Objective**:
+Construct and evaluate a Retrieval-Augmented Generation pipeline combining semantic retrieval, prompt engineering, and text generation.
 
-- From the project root, run:
-  ```bash
-  python src/chunk_embed_index.py
-  ```
+**Location**:
+Implemented in `src/rag_evaluation.py`.
 
-# Requirements
+**Key Components**:
 
-Use the following to install all required packages:
+- **Retriever**: Uses FAISS + MiniLM embeddings.
+- **Prompt**: Instructions to the LLM to act as a CrediTrust analyst and use only given context.
+- **Generator**: Uses `google/flan-t5-base` for generation.
+- **Post-processing**: Cosine similarity re-ranking + chunk cleaning.
+
+**Evaluation Table**:
+
+| Question                                                | Generated Answer                                                                                                                                    | Retrieved Sources (Sample)                                                                                                     | Quality Score (1-5) | Comments/Analysis                                                |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|---------------------|------------------------------------------------------------------|
+| Why are people unhappy with BNPL?                       | BNPL has been closing customer accounts without providing clear reasons which has affected customers who have been using their cash back credit cards... | ...political motivations particularly in light of tensions between xxxx and the united states...                              | 4                   | Answer directly uses sources, coherent, and well-grounded        |
+| What are the common issues with money transfers?        | A western union money transfer was blocked... dollar amount of xxxx has not been credited... immigrants and public policy currently opposes immigrants... | ...nativeborn united states of america citizen who was trying to use this service to send slightly more than a xxxx dollars... | 4                   | Relevant, covers policy and technical issues, slightly long      |
+| Are there complaints about unexpected credit card fees? | Yes. Charges were issued along with significant late fees... companies may exploit elderly customers...                                              | ...credit card company charged me a fee of on xxxx without any indication what that fee is for...                             | 5                   | Very strong match between complaint context and generated response |
+
+---
+
+### Task 4: Creating an Interactive Chat Interface
+
+**Objective**:
+Provide a simple web-based interface for non-technical users to query the RAG system.
+
+**Location**:
+Implemented in `app.py`.
+
+**Features**:
+
+- Uses `Gradio` for front-end UI.
+- Preloads sample questions.
+- Displays source chunks for transparency.
+- Includes "Clear Chat" button for resetting session.
+
+---
+
+## How to Run the Pipeline
+
+**Task 1 - Data Preprocessing**:
+
+```bash
+Run inside Jupyter Notebook: notebooks/EDA.ipynb
+```
+
+**Task 2 - Chunking & Indexing**:
+
+```bash
+python src/chunk_embed_index.py
+```
+
+**Task 3 - RAG Evaluation**:
+
+```bash
+python src/rag_evaluation.py
+```
+
+**Task 4 - Launch Chatbot Interface**:
+
+```bash
+python src/app.py
+```
+
+Then navigate to [http://127.0.0.1:7860](http://127.0.0.1:7860)
+
+## Requirements
+
 ```bash
 pip install -r requirements.txt
 ```
-**Content includes:**
-- nginx
+
+**Includes**:
+
 - pandas
 - numpy
 - tqdm
 - langchain
 - sentence-transformers
 - faiss-cpu
+- transformers
+- gradio
 
-# Contact
+## Contact
 
 For questions, feedback, or contributions, feel free to open an issue or submit a pull request.
