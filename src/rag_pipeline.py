@@ -21,6 +21,7 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
+from scipy.spatial.distance import cosine
 
 # ✅ Absolute Paths
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,6 +32,7 @@ metadata_path = os.path.join(vector_dir, 'metadata.pkl')
 # ✅ Config
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 TOP_K = 5  # Number of relevant chunks to retrieve
+TOP_K_FINAL = 3  # ✅ Use only top 3 after re-ranking
 
 # ✅ Step 1: Load Vector Index and Metadata
 def load_vector_store():
@@ -57,21 +59,39 @@ def initialize_models():
 
     return embedder, generator
 
-# ✅ Step 3: Retrieve Top-k Context Chunks
-def retrieve_context(query, embedder, index, metadata, top_k=TOP_K):
-    query_vector = embedder.encode([query])
-    distances, indices = index.search(np.array(query_vector), top_k)
+# ✅ Step 3: Clean chunk text
+# ✅ Implemented for Task 3 Improvement ✅
+def clean_chunk(text, max_words=300):
+    text = text.replace("\n", " ").replace("xxxx", "").strip()
+    words = text.split()
+    return " ".join(words[:max_words])
 
-    retrieved_chunks = []
+# ✅ Step 4: Retrieve, Re-rank, and Clean Top Context Chunks
+# ✅ Improved for Task 3 quality
+
+def retrieve_context(query, embedder, index, metadata, top_k=TOP_K, final_k=TOP_K_FINAL):
+    query_vector = embedder.encode([query])[0]
+    distances, indices = index.search(np.array([query_vector]), top_k)
+
+    scored_chunks = []
     for i in range(top_k):
         idx = indices[0][i]
         meta = metadata[idx]
-        chunk_text = meta["text"]
-        retrieved_chunks.append(chunk_text)
+        chunk_text = clean_chunk(meta["text"])  # ✅ Clean the chunk text
+        chunk_vector = embedder.encode([chunk_text])[0]
+        similarity = 1 - cosine(query_vector, chunk_vector)
 
-    return "\n\n".join(retrieved_chunks), [metadata[i] for i in indices[0]]
+        scored_chunks.append((similarity, chunk_text, meta))
 
-# ✅ Step 4: Build Prompt for the LLM
+    # ✅ Sort by similarity descending and keep top final_k
+    top_chunks = sorted(scored_chunks, key=lambda x: x[0], reverse=True)[:final_k]
+
+    context_texts = [chunk[1] for chunk in top_chunks]
+    meta_used = [chunk[2] for chunk in top_chunks]
+
+    return "\n\n".join(context_texts), meta_used
+
+# ✅ Step 5: Build Prompt for the LLM
 def build_prompt(context, query):
     prompt = f"""
 You are a financial analyst assistant for CrediTrust.
@@ -86,7 +106,7 @@ Question: {query}
 """
     return prompt
 
-# ✅ Step 5: Run the RAG Pipeline
+# ✅ Step 6: Run the RAG Pipeline
 def answer_query(query, embedder, generator, index, metadata, top_k=TOP_K):
     context, retrieved_meta = retrieve_context(query, embedder, index, metadata, top_k)
     prompt = build_prompt(context, query)
@@ -108,7 +128,9 @@ if __name__ == "__main__":
     questions = [
         "What are common issues reported about BNPL?",
         "Why are customers frustrated with credit card services?",
-        "Do people complain about transfer delays?"
+        "Do people complain about transfer delays?",
+        "Are there complaints related to loan application processes?",
+        "What problems do users face with mobile banking apps?"
     ]
 
     for q in questions:
